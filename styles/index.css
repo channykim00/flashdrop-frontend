@@ -1,0 +1,15 @@
+@import "tailwindcss";
+
+@theme {
+  --color-dodger-blue-50: #eff7ff;
+  --color-dodger-blue-100: #deefff;
+  --color-dodger-blue-200: #b6e0ff;
+  --color-dodger-blue-300: #75c9ff;
+  --color-dodger-blue-400: #2caeff;
+  --color-dodger-blue-500: #008ded;
+  --color-dodger-blue-600: #0074d4;
+  --color-dodger-blue-700: #005cab;
+  --color-dodger-blue-800: #004e8d;
+  --color-dodger-blue-900: #064274;
+  --color-dodger-blue-950: #04294d;
+}
