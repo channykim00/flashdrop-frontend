@@ -5,6 +5,7 @@ import logo from "@/assets/logo.png";
 import Loading from "@/components/Loading";
 import PasswordPrompt from "@/components/PasswordComponents";
 import { API_URL } from "@/constants";
+import socket from "@/socket/socket";
 
 const Home = () => {
   const { uniqueUrl } = useParams();
@@ -12,9 +13,57 @@ const Home = () => {
   const [authenticated, setAuthenticated] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState([]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("제출된 파일:", selectedFiles);
+
+    if (selectedFiles.length === 0) {
+      alert("파일을 선택하세요.");
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_URL}/api/receive/is-online/${linkInfo.deviceId}`);
+      const data = await res.json();
+
+      if (!data.success) {
+        console.error("온라인 상태 에러");
+        return;
+      }
+      if (data.isOnline) {
+        socket.connect();
+
+        socket.on("connect", () => {
+          selectedFiles.forEach((file) => {
+            const reader = new FileReader();
+            reader.onload = () => {
+              socket.emit("send-file", {
+                deviceId: linkInfo.deviceId,
+                fileName: file.name,
+                fileData: reader.result,
+                folderPath: linkInfo.folderPath,
+              });
+            };
+            reader.readAsArrayBuffer(file);
+          });
+        });
+
+        socket.on("send-file-success", (msg) => {
+          console.log(msg);
+          alert("파일 전송 성공");
+          socket.disconnect();
+        });
+
+        socket.on("send-file-error", (err) => {
+          console.error("파일 전송 실패:", err);
+          alert("파일 전송 실패");
+          socket.disconnect();
+        });
+      } else {
+        console.log("url 주인 오프라인");
+      }
+    } catch (err) {
+      console.error("온라인 상태 확인 중 오류:", err);
+    }
   };
 
   const handleFileChange = (e) => {
