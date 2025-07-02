@@ -1,10 +1,18 @@
+import { IoCloseSharp } from "react-icons/io5";
+import logo from "@/assets/logo.png";
+
 const Home = () => {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
+    <div className="flex min-h-screen flex-col items-center justify-center space-y-4 bg-gray-100 px-4">
+      <div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-6">
+        <img
+          src={logo}
+          alt="logo"
+          className="mx-auto w-52"
+        />
+      </div>
       <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
-        <h1 className="mb-6 text-center text-xl font-semibold text-gray-800">
-          FlashDrop 파일 업로드
-        </h1>
+        <h1 className="mb-6 text-center text-xl font-semibold text-gray-800">링크 제목</h1>
 
         <form className="space-y-5">
           <div>
@@ -44,19 +52,7 @@ const Home = () => {
               >
                 <span className="truncate text-sm text-gray-800">{file}</span>
                 <button className="text-gray-500 hover:text-gray-700">
-                  <svg
-                    className="h-4 w-4"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
+                  <IoCloseSharp />
                 </button>
               </div>
             ))}
