@@ -5,13 +5,14 @@ import logo from "@/assets/logo.png";
 import Loading from "@/components/Loading";
 import PasswordPrompt from "@/components/PasswordComponents";
 import { API_URL } from "@/constants";
-import socket from "@/socket/socket";
+import { sendFileInChunksHttp } from "@/utils/sendFileInChunksHttp";
 
 const Home = () => {
   const { uniqueUrl } = useParams();
   const [linkInfo, setLinkInfo] = useState(null);
   const [authenticated, setAuthenticated] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState([]);
+  const [progressMap, setProgressMap] = useState({});
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -29,35 +30,17 @@ const Home = () => {
         console.error("온라인 상태 에러");
         return;
       }
+
       if (data.isOnline) {
-        socket.connect();
-
-        socket.on("connect", () => {
-          selectedFiles.forEach((file) => {
-            const reader = new FileReader();
-            reader.onload = () => {
-              socket.emit("send-file", {
-                deviceId: linkInfo.deviceId,
-                fileName: file.name,
-                fileData: reader.result,
-                folderPath: linkInfo.folderPath,
-              });
-            };
-            reader.readAsArrayBuffer(file);
+        for (const { file, fileId } of selectedFiles) {
+          await sendFileInChunksHttp(file, uniqueUrl, fileId, (percent) => {
+            setProgressMap((prev) => ({
+              ...prev,
+              [fileId]: percent,
+            }));
           });
-        });
-
-        socket.on("send-file-success", (msg) => {
-          console.log(msg);
-          alert("파일 전송 성공");
-          socket.disconnect();
-        });
-
-        socket.on("send-file-error", (err) => {
-          console.error("파일 전송 실패:", err);
-          alert("파일 전송 실패");
-          socket.disconnect();
-        });
+        }
+        console.log("업로드 완료");
       } else {
         console.log("url 주인 오프라인");
       }
@@ -67,7 +50,10 @@ const Home = () => {
   };
 
   const handleFileChange = (e) => {
-    const files = Array.from(e.target.files);
+    const files = Array.from(e.target.files).map((file) => ({
+      file,
+      fileId: `${file.name}-${crypto.randomUUID()}`,
+    }));
     setSelectedFiles((prev) => [...prev, ...files]);
   };
 
@@ -85,7 +71,6 @@ const Home = () => {
           throw new Error("링크 정보를 가져오는 데 실패했습니다.");
         }
         const data = await res.json();
-        console.log("받은 링크 정보:", data.link);
         setLinkInfo(data.link);
       } catch (err) {
         console.error(err);
@@ -116,7 +101,7 @@ const Home = () => {
         />
       </div>
       <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
-        <h1 className="mb-6 text-center text-xl font-semibold text-gray-800"> {linkInfo.title} </h1>
+        <h1 className="mb-6 text-center text-xl font-semibold text-gray-800">{linkInfo.title}</h1>
 
         <form
           className="space-y-5"
@@ -136,7 +121,6 @@ const Home = () => {
 
           <div>
             <label className="mb-2 block text-sm font-medium text-gray-700">파일 업로드</label>
-
             <input
               id="file"
               type="file"
@@ -156,20 +140,32 @@ const Home = () => {
           </div>
 
           <div className="space-y-3">
-            {selectedFiles.map((file, idx) => (
-              <div
-                key={idx}
-                className="flex items-center justify-between rounded-lg bg-gray-100 px-4 py-2"
-              >
-                <span className="truncate text-sm text-gray-800">{file.name}</span>
-                <button
-                  className="cursor-pointer text-gray-500 hover:text-gray-700"
-                  onClick={() => handleRemoveFile(idx)}
+            {selectedFiles.map(({ file, fileId }, idx) => {
+              const progress = progressMap[fileId] || 0;
+
+              return (
+                <div
+                  key={idx}
+                  className="flex flex-col gap-1 rounded-lg bg-gray-100 px-4 py-2"
                 >
-                  <IoCloseSharp />
-                </button>
-              </div>
-            ))}
+                  <div className="flex items-center justify-between">
+                    <span className="truncate text-sm text-gray-800">{file.name}</span>
+                    <button
+                      className="cursor-pointer text-gray-500 hover:text-gray-700"
+                      onClick={() => handleRemoveFile(idx)}
+                    >
+                      <IoCloseSharp />
+                    </button>
+                  </div>
+                  <div className="h-2 w-full overflow-hidden rounded bg-gray-200">
+                    <div
+                      className="bg-dodger-blue-500 h-full transition-all"
+                      style={{ width: `${progress}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
           </div>
 
           <div>
