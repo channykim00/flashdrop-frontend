@@ -17,6 +17,7 @@ export async function sendFileInChunksHttp(file, uniqueUrl, randomFileId, onProg
     formData.append("totalChunks", totalChunks.toString());
     formData.append("uniqueUrl", uniqueUrl);
     formData.append("filename", file.name);
+    formData.append("size", file.size);
 
     const res = await fetch(`${API_URL}/api/uploads/chunk`, {
       method: "POST",
@@ -34,6 +35,7 @@ export async function sendFileInChunksHttp(file, uniqueUrl, randomFileId, onProg
       fileId,
       fileName: file.name,
       totalChunks,
+      size: file.size,
       uniqueUrl,
     }),
   });
