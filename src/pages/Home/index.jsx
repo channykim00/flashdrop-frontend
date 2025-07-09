@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { FaRegCircleCheck } from "react-icons/fa6";
 import { IoCloseSharp } from "react-icons/io5";
 import { useParams } from "react-router-dom";
 import logo from "@/assets/logo.png";
@@ -13,6 +14,7 @@ const Home = () => {
   const [authenticated, setAuthenticated] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [progressMap, setProgressMap] = useState({});
+  const [isUploading, setIsUploading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -21,6 +23,8 @@ const Home = () => {
       alert("파일을 선택하세요.");
       return;
     }
+
+    setIsUploading(true);
 
     try {
       const res = await fetch(`${API_URL}/api/receive/is-online/${linkInfo.deviceId}`);
@@ -46,6 +50,8 @@ const Home = () => {
       }
     } catch (err) {
       console.error("온라인 상태 확인 중 오류:", err);
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -151,10 +157,15 @@ const Home = () => {
                   <div className="flex items-center justify-between">
                     <span className="truncate text-sm text-gray-800">{file.name}</span>
                     <button
+                      type="button"
                       className="cursor-pointer text-gray-500 hover:text-gray-700"
                       onClick={() => handleRemoveFile(idx)}
                     >
-                      <IoCloseSharp />
+                      {progress === 100 ? (
+                        <FaRegCircleCheck className="text-green-500" />
+                      ) : (
+                        <IoCloseSharp />
+                      )}
                     </button>
                   </div>
                   <div className="h-2 w-full overflow-hidden rounded bg-gray-200">
@@ -171,9 +182,14 @@ const Home = () => {
           <div>
             <button
               type="submit"
-              className="bg-dodger-blue-500 hover:bg-dodger-blue-600 focus:ring-dodger-blue-300 w-full cursor-pointer rounded-md px-4 py-2 text-center text-sm font-semibold text-white shadow focus:ring-2 focus:outline-none"
+              disabled={isUploading}
+              className={`w-full cursor-pointer rounded-md px-4 py-2 text-center text-sm font-semibold text-white shadow focus:ring-2 focus:outline-none ${
+                isUploading
+                  ? "cursor-not-allowed bg-gray-300"
+                  : "bg-dodger-blue-500 hover:bg-dodger-blue-600 focus:ring-dodger-blue-300"
+              }`}
             >
-              전송하기
+              {isUploading ? "업로드 중..." : "전송하기"}
             </button>
           </div>
         </form>
