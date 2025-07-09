@@ -3,6 +3,7 @@ import { FaRegCircleCheck } from "react-icons/fa6";
 import { IoCloseSharp } from "react-icons/io5";
 import { useParams } from "react-router-dom";
 import logo from "@/assets/logo.png";
+import ErrorModal from "@/components/ErrorModal";
 import Loading from "@/components/Loading";
 import PasswordPrompt from "@/components/PasswordComponents";
 import { API_URL } from "@/constants";
@@ -15,12 +16,16 @@ const Home = () => {
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [progressMap, setProgressMap] = useState({});
   const [isUploading, setIsUploading] = useState(false);
+  const [error, setError] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (selectedFiles.length === 0) {
-      alert("파일을 선택하세요.");
+      setError({
+        title: "파일 없음",
+        message: "업로드할 파일을 선택하세요.",
+      });
       return;
     }
 
@@ -99,6 +104,13 @@ const Home = () => {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center space-y-4 bg-gray-100 px-4">
+      {error && (
+        <ErrorModal
+          errorTitle={error.title}
+          errorMessage={error.message}
+          onClose={() => setError(null)}
+        />
+      )}
       <div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-6">
         <img
           src={logo}
