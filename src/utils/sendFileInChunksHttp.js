@@ -1,6 +1,6 @@
 import { API_URL } from "@/constants";
 
-export async function sendFileInChunksHttp(file, uniqueUrl, randomFileId, onProgress) {
+export async function sendFileInChunksHttp(file, uniqueUrl, randomFileId, onProgress, senderName) {
   const CHUNK_SIZE = 1 * 1024 * 1024;
   const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
   const fileId = randomFileId;
@@ -18,11 +18,19 @@ export async function sendFileInChunksHttp(file, uniqueUrl, randomFileId, onProg
     formData.append("uniqueUrl", uniqueUrl);
     formData.append("filename", file.name);
     formData.append("size", file.size);
+    if (senderName) {
+      formData.append("senderName", senderName);
+    }
 
     const res = await fetch(`${API_URL}/api/uploads/chunk`, {
       method: "POST",
       body: formData,
     });
+
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.message || "업로드 실패");
+    }
 
     const result = await res.json();
     onProgress(result.progress, fileId);

@@ -17,6 +17,7 @@ const Home = () => {
   const [progressMap, setProgressMap] = useState({});
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState(null);
+  const [senderName, setSenderName] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -25,6 +26,13 @@ const Home = () => {
       setError({
         title: "파일 없음",
         message: "업로드할 파일을 선택하세요.",
+      });
+      return;
+    }
+    if (linkInfo?.requireSenderName && !senderName.trim()) {
+      setError({
+        title: "이름 누락",
+        message: "이름을 입력해야 파일을 전송할 수 있습니다.",
       });
       return;
     }
@@ -40,18 +48,27 @@ const Home = () => {
         return;
       }
 
-      if (data.isOnline) {
-        for (const { file, fileId } of selectedFiles) {
-          await sendFileInChunksHttp(file, uniqueUrl, fileId, (percent) => {
-            setProgressMap((prev) => ({
-              ...prev,
-              [fileId]: percent,
-            }));
+      for (const { file, fileId } of selectedFiles) {
+        try {
+          await sendFileInChunksHttp(
+            file,
+            uniqueUrl,
+            fileId,
+            (percent) => {
+              setProgressMap((prev) => ({
+                ...prev,
+                [fileId]: percent,
+              }));
+            },
+            linkInfo?.requireSenderName ? senderName : undefined,
+          );
+        } catch (uploadError) {
+          setError({
+            title: "업로드 실패",
+            message: uploadError.message,
           });
+          break;
         }
-        console.log("업로드 완료");
-      } else {
-        console.log("url 주인 오프라인");
       }
     } catch (err) {
       console.error("온라인 상태 확인 중 오류:", err);
@@ -125,13 +142,16 @@ const Home = () => {
           className="space-y-5"
           onSubmit={handleSubmit}
         >
-          {linkInfo?.link?.requireSenderName && (
+          {linkInfo?.requireSenderName && (
             <div>
               <label className="mb-1 block text-sm font-medium text-gray-700">이름</label>
               <input
+                required
                 type="text"
                 name="name"
                 placeholder="제출자 이름을 입력하세요"
+                value={senderName}
+                onChange={(e) => setSenderName(e.target.value)}
                 className="focus:border-dodger-blue-500 focus:ring-dodger-blue-300 w-full rounded-md border border-gray-300 px-4 py-2 text-sm shadow-sm focus:ring-1 focus:outline-none"
               />
             </div>
