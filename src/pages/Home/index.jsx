@@ -14,6 +14,7 @@ const Home = () => {
   const [linkInfo, setLinkInfo] = useState(null);
   const [authenticated, setAuthenticated] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState([]);
+  const [uploadedFiles, setUploadedFiles] = useState([]);
   const [progressMap, setProgressMap] = useState({});
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState(null);
@@ -23,31 +24,18 @@ const Home = () => {
     e.preventDefault();
 
     if (selectedFiles.length === 0) {
-      setError({
-        title: "파일 없음",
-        message: "업로드할 파일을 선택하세요.",
-      });
+      setError({ title: "파일 없음", message: "업로드할 파일을 선택하세요." });
       return;
     }
+
     if (linkInfo?.requireSenderName && !senderName.trim()) {
-      setError({
-        title: "이름 누락",
-        message: "이름을 입력해야 파일을 전송할 수 있습니다.",
-      });
+      setError({ title: "이름 누락", message: "이름을 입력해야 파일을 전송할 수 있습니다." });
       return;
     }
 
     setIsUploading(true);
 
     try {
-      const res = await fetch(`${API_URL}/api/receive/is-online/${linkInfo.deviceId}`);
-      const data = await res.json();
-
-      if (!data.success) {
-        console.error("온라인 상태 에러");
-        return;
-      }
-
       for (const { file, fileId } of selectedFiles) {
         try {
           await sendFileInChunksHttp(
@@ -62,6 +50,8 @@ const Home = () => {
             },
             linkInfo?.requireSenderName ? senderName : undefined,
           );
+
+          setUploadedFiles((prev) => [...prev, { file, fileId }]);
         } catch (uploadError) {
           setError({
             title: "업로드 실패",
@@ -70,8 +60,11 @@ const Home = () => {
           break;
         }
       }
+
+      setSelectedFiles([]);
+      setProgressMap({});
     } catch (err) {
-      console.error("온라인 상태 확인 중 오류:", err);
+      console.error("파일 업로드 중 에러:", err);
     } finally {
       setIsUploading(false);
     }
@@ -95,13 +88,10 @@ const Home = () => {
     const fetchLinkInfo = async () => {
       try {
         const res = await fetch(`${API_URL}/api/receive/${uniqueUrl}`);
-        if (!res.ok) {
-          throw new Error("링크 정보를 가져오는 데 실패했습니다.");
-        }
         const data = await res.json();
         setLinkInfo(data.link);
       } catch (err) {
-        console.error(err);
+        console.error("링크 정보 로딩 오류:", err);
       }
     };
 
@@ -135,6 +125,7 @@ const Home = () => {
           className="mx-auto w-52"
         />
       </div>
+
       <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
         <h1 className="mb-6 text-center text-xl font-semibold text-gray-800">{linkInfo.title}</h1>
 
@@ -148,11 +139,10 @@ const Home = () => {
               <input
                 required
                 type="text"
-                name="name"
                 placeholder="제출자 이름을 입력하세요"
                 value={senderName}
                 onChange={(e) => setSenderName(e.target.value)}
-                className="focus:border-dodger-blue-500 focus:ring-dodger-blue-300 w-full rounded-md border border-gray-300 px-4 py-2 text-sm shadow-sm focus:ring-1 focus:outline-none"
+                className="focus:ring-dodger-blue-300 focus:border-dodger-blue-500 w-full rounded-md border border-gray-300 px-4 py-2 text-sm shadow-sm focus:ring-1 focus:outline-none"
               />
             </div>
           )}
@@ -180,10 +170,9 @@ const Home = () => {
           <div className="space-y-3">
             {selectedFiles.map(({ file, fileId }, idx) => {
               const progress = progressMap[fileId] || 0;
-
               return (
                 <div
-                  key={idx}
+                  key={fileId}
                   className="flex flex-col gap-1 rounded-lg bg-gray-100 px-4 py-2"
                 >
                   <div className="flex items-center justify-between">
@@ -210,6 +199,21 @@ const Home = () => {
               );
             })}
           </div>
+
+          {uploadedFiles.length > 0 && (
+            <div className="space-y-2 pt-4">
+              <p className="text-sm font-medium text-gray-700">업로드 완료 파일</p>
+              {uploadedFiles.map(({ file, fileId }) => (
+                <div
+                  key={fileId}
+                  className="flex items-center justify-between rounded-lg bg-green-50 px-4 py-2 text-green-700"
+                >
+                  <span className="truncate text-sm">{file.name}</span>
+                  <FaRegCircleCheck className="text-green-600" />
+                </div>
+              ))}
+            </div>
+          )}
 
           <div>
             <button
