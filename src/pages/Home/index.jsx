@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { FaRegCircleCheck } from "react-icons/fa6";
 import { IoCloseSharp } from "react-icons/io5";
 import { useParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { FILE_TYPE_OPTIONS } from "../../constants";
 import logo from "@/assets/logo.png";
 import ErrorModal from "@/components/ErrorModal";
 import Loading from "@/components/Loading";
@@ -10,6 +12,8 @@ import { API_URL } from "@/constants";
 import { sendFileInChunksHttp } from "@/utils/sendFileInChunksHttp";
 
 const Home = () => {
+  const navigate = useNavigate();
+
   const { uniqueUrl } = useParams();
   const [linkInfo, setLinkInfo] = useState(null);
   const [authenticated, setAuthenticated] = useState(false);
@@ -70,6 +74,19 @@ const Home = () => {
     }
   };
 
+  const handleDrop = (e) => {
+    e.preventDefault();
+    const files = Array.from(e.dataTransfer.files).map((file) => ({
+      file,
+      fileId: `${file.name}-${crypto.randomUUID()}`,
+    }));
+    setSelectedFiles((prev) => [...prev, ...files]);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+  };
+
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files).map((file) => ({
       file,
@@ -88,6 +105,11 @@ const Home = () => {
     const fetchLinkInfo = async () => {
       try {
         const res = await fetch(`${API_URL}/api/receive/${uniqueUrl}`);
+        if (res.status === 404) {
+          navigate("/not-found");
+          return;
+        }
+
         const data = await res.json();
         setLinkInfo(data.link);
       } catch (err) {
@@ -108,7 +130,9 @@ const Home = () => {
       />
     );
   }
-
+  const imageExtensions =
+    FILE_TYPE_OPTIONS.find((option) => option.value === linkInfo.allowedFileTypeGroup)
+      ?.extensions || [];
   return (
     <div className="flex min-h-screen flex-col items-center justify-center space-y-4 bg-gray-100 px-4">
       {error && (
@@ -128,7 +152,25 @@ const Home = () => {
 
       <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
         <h1 className="mb-6 text-center text-xl font-semibold text-gray-800">{linkInfo.title}</h1>
-
+        <div className="mb-5 text-sm">
+          <div className="mb-1">파일 형식:</div>
+          <div>
+            {linkInfo.allowedFileTypeGroup === "all" ? (
+              <span className="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-green-700/10 ring-inset">
+                전체 허용
+              </span>
+            ) : (
+              imageExtensions.map((ext) => (
+                <span
+                  key={ext}
+                  className="mr-1 inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-blue-700/10 ring-inset"
+                >
+                  {ext}
+                </span>
+              ))
+            )}
+          </div>
+        </div>
         <form
           className="space-y-5"
           onSubmit={handleSubmit}
@@ -158,6 +200,8 @@ const Home = () => {
             />
             <label
               htmlFor="file"
+              onDrop={handleDrop}
+              onDragOver={handleDragOver}
               className="flex min-h-[150px] cursor-pointer flex-col items-center justify-center rounded-md border border-dashed border-gray-300 bg-gray-50 px-6 py-8 text-center hover:bg-gray-100"
             >
               <p className="mb-1 text-sm font-medium text-gray-700">파일을 여기로 드롭하거나</p>
