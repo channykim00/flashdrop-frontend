@@ -1,4 +1,4 @@
-export const API_URL = "http://localhost:4000";
+export const API_URL = "https://port-0-flashdrop-backend-md6dio3qdb6e915b.sel5.cloudtype.app";
 
 export const FILE_TYPE_OPTIONS = [
   {
