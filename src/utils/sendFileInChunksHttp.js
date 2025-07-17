@@ -45,6 +45,7 @@ export async function sendFileInChunksHttp(file, uniqueUrl, randomFileId, onProg
       totalChunks,
       size: file.size,
       uniqueUrl,
+      senderName,
     }),
   });
 }
