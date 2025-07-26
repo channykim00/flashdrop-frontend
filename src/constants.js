@@ -1,4 +1,4 @@
-export const API_URL = "http://52.79.234.77:4000";
+export const API_URL = "https://flash-drop.xyz";
 
 export const FILE_TYPE_OPTIONS = [
   {
